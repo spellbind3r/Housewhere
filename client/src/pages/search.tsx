@@ -49,13 +49,13 @@ export default function Search() {
   // Get items by tag
   const { data: tagResults = [], isLoading: isLoadingTag } = useQuery<ItemWithLocation[]>({
     queryKey: ["/api/items/tag", selectedTag],
-    enabled: selectedTag.length > 0 && !debouncedQuery,
+    enabled: selectedTag.length > 0 && selectedTag !== "all" && !debouncedQuery,
   });
 
   // Get items by status
   const { data: statusResults = [], isLoading: isLoadingStatus } = useQuery<ItemWithLocation[]>({
     queryKey: ["/api/items/status", selectedStatus],
-    enabled: selectedStatus.length > 0 && !debouncedQuery && !selectedTag,
+    enabled: selectedStatus.length > 0 && selectedStatus !== "all" && !debouncedQuery && !selectedTag,
   });
 
   // Determine which results to show
@@ -71,13 +71,13 @@ export default function Search() {
 
   const clearFilters = () => {
     setSearchQuery("");
-    setSelectedTag("");
-    setSelectedStatus("");
+    setSelectedTag("all");
+    setSelectedStatus("all");
     setDebouncedQuery("");
     window.history.replaceState({}, '', '/search');
   };
 
-  const hasActiveFilters = debouncedQuery || selectedTag || selectedStatus;
+  const hasActiveFilters = debouncedQuery || (selectedTag && selectedTag !== "all") || (selectedStatus && selectedStatus !== "all");
 
   return (
     <div className="flex-1 overflow-auto">
@@ -125,7 +125,7 @@ export default function Search() {
                       <SelectValue placeholder="Select tag" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All tags</SelectItem>
+                      <SelectItem value="all">All tags</SelectItem>
                       {tags.map((tag) => (
                         <SelectItem key={tag} value={tag}>
                           {tag}
@@ -143,7 +143,7 @@ export default function Search() {
                       <SelectValue placeholder="Select status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All statuses</SelectItem>
+                      <SelectItem value="all">All statuses</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
                       <SelectItem value="missing">Missing</SelectItem>
                       <SelectItem value="removed">Removed</SelectItem>
