@@ -64,14 +64,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
     
-    const garage: StorageArea = {
-      id: "garage",
-      name: "Garage",
-      description: "Storage and workshop area",
-      type: "area",
-      parentId: null,
-      createdAt: new Date(),
-    };
+    // Garage removed - users can create their own
 
     const livingRoom: StorageArea = {
       id: "living-room",
@@ -118,7 +111,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
     };
 
-    [mainHouse, garage, livingRoom, kitchen, bedroom, closet, topShelf].forEach(area => {
+    [mainHouse, livingRoom, kitchen, bedroom, closet, topShelf].forEach(area => {
       this.storageAreas.set(area.id, area);
     });
   }

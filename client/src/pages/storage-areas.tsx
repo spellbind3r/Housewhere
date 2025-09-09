@@ -169,7 +169,7 @@ export default function StorageAreas() {
               </CardContent>
             </Card>
           ) : (
-            hierarchy.map(area => renderStorageArea(area))
+            hierarchy.map((area) => renderStorageArea(area, 0))
           )}
         </div>
 
