@@ -50,6 +50,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Recent items with location endpoint (must come before /:id route)
+  app.get("/api/items/recent", async (req, res) => {
+    try {
+      const items = await storage.getItems();
+      const recentItems = items.slice(0, 10); // Get 10 most recent
+      
+      const itemsWithLocation = await Promise.all(
+        recentItems.map(async item => {
+          const itemWithLocation = await storage.getItemWithLocation(item.id);
+          return itemWithLocation;
+        })
+      );
+      
+      res.json(itemsWithLocation.filter(Boolean));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch recent items" });
+    }
+  });
+
   // Items endpoints
   app.get("/api/items", async (req, res) => {
     try {
@@ -172,25 +191,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(history);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch item history" });
-    }
-  });
-
-  // Recent items with location endpoint
-  app.get("/api/items/recent", async (req, res) => {
-    try {
-      const items = await storage.getItems();
-      const recentItems = items.slice(0, 10); // Get 10 most recent
-      
-      const itemsWithLocation = await Promise.all(
-        recentItems.map(async item => {
-          const itemWithLocation = await storage.getItemWithLocation(item.id);
-          return itemWithLocation;
-        })
-      );
-      
-      res.json(itemsWithLocation.filter(Boolean));
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch recent items" });
     }
   });
 
