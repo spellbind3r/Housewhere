@@ -28,7 +28,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { insertStorageAreaSchema } from "@shared/schema";
+import { insertStorageAreaSchema, type StorageArea } from "@shared/schema";
 
 interface AddStorageModalProps {
   isOpen: boolean;
@@ -52,7 +52,7 @@ export function AddStorageModal({ isOpen, onClose }: AddStorageModalProps) {
     },
   });
 
-  const { data: storageAreas = [] } = useQuery({
+  const { data: storageAreas = [] } = useQuery<StorageArea[]>({
     queryKey: ["/api/storage-areas"],
   });
 
@@ -64,11 +64,11 @@ export function AddStorageModal({ isOpen, onClose }: AddStorageModalProps) {
       case "area":
         return []; // Areas have no parent
       case "room":
-        return storageAreas.filter((area: any) => area.type === "area");
+        return storageAreas.filter((area) => area.type === "area");
       case "storage_unit":
-        return storageAreas.filter((area: any) => area.type === "room");
+        return storageAreas.filter((area) => area.type === "room");
       case "section":
-        return storageAreas.filter((area: any) => area.type === "storage_unit");
+        return storageAreas.filter((area) => area.type === "storage_unit");
       default:
         return [];
     }
@@ -199,7 +199,7 @@ export function AddStorageModal({ isOpen, onClose }: AddStorageModalProps) {
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">No parent</SelectItem>
-                        {parentOptions.map((area: any) => (
+                        {parentOptions.map((area) => (
                           <SelectItem key={area.id} value={area.id}>
                             {area.name}
                           </SelectItem>

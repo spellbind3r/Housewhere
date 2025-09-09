@@ -30,7 +30,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { insertItemSchema } from "@shared/schema";
+import { insertItemSchema, type StorageArea } from "@shared/schema";
 
 interface AddItemModalProps {
   isOpen: boolean;
@@ -62,19 +62,19 @@ export function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
   });
 
   // Get all storage areas
-  const { data: allStorageAreas = [] } = useQuery({
+  const { data: allStorageAreas = [] } = useQuery<StorageArea[]>({
     queryKey: ["/api/storage-areas"],
   });
 
   // Filter areas by type and parent
-  const areas = allStorageAreas.filter((area: any) => area.type === "area");
-  const rooms = allStorageAreas.filter((area: any) => 
+  const areas = allStorageAreas.filter((area) => area.type === "area");
+  const rooms = allStorageAreas.filter((area) => 
     area.type === "room" && area.parentId === selectedArea
   );
-  const storageUnits = allStorageAreas.filter((area: any) => 
+  const storageUnits = allStorageAreas.filter((area) => 
     area.type === "storage_unit" && area.parentId === selectedRoom
   );
-  const sections = allStorageAreas.filter((area: any) => 
+  const sections = allStorageAreas.filter((area) => 
     area.type === "section" && area.parentId === selectedStorageUnit
   );
 
@@ -179,6 +179,7 @@ export function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                         placeholder="Add a description for this item" 
                         rows={3}
                         {...field} 
+                        value={field.value || ""}
                         data-testid="input-item-description"
                       />
                     </FormControl>
@@ -204,7 +205,7 @@ export function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                       <SelectValue placeholder="Select area" />
                     </SelectTrigger>
                     <SelectContent>
-                      {areas.map((area: any) => (
+                      {areas.map((area) => (
                         <SelectItem key={area.id} value={area.id}>
                           {area.name}
                         </SelectItem>
@@ -225,7 +226,7 @@ export function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                       <SelectValue placeholder="Select room" />
                     </SelectTrigger>
                     <SelectContent>
-                      {rooms.map((room: any) => (
+                      {rooms.map((room) => (
                         <SelectItem key={room.id} value={room.id}>
                           {room.name}
                         </SelectItem>
@@ -248,7 +249,7 @@ export function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                       <SelectValue placeholder="Select storage unit" />
                     </SelectTrigger>
                     <SelectContent>
-                      {storageUnits.map((unit: any) => (
+                      {storageUnits.map((unit) => (
                         <SelectItem key={unit.id} value={unit.id}>
                           {unit.name}
                         </SelectItem>
@@ -273,7 +274,7 @@ export function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
                           <SelectValue placeholder="Select section" />
                         </SelectTrigger>
                         <SelectContent>
-                          {sections.map((section: any) => (
+                          {sections.map((section) => (
                             <SelectItem key={section.id} value={section.id}>
                               {section.name}
                             </SelectItem>

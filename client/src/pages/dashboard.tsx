@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { AddItemModal } from "@/components/add-item-modal";
-import { AddStorageModal } from "@/components/add-storage-modal";
-import { ItemList } from "@/components/item-list";
+import { AddItemModal } from "../components/add-item-modal";
+import { AddStorageModal } from "../components/add-storage-modal";
+import { ItemList } from "../components/item-list";
 import type { StorageStats, ItemWithLocation } from "@shared/schema";
 
 export default function Dashboard() {

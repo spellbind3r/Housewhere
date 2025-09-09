@@ -8,10 +8,10 @@ interface ItemListProps {
 }
 
 export function ItemList({ items }: ItemListProps) {
-  const getItemIcon = (tags: string[] = []) => {
-    if (tags.includes("clothing")) return Box;
-    if (tags.includes("tools")) return Wrench;
-    if (tags.includes("books")) return BookOpen;
+  const getItemIcon = (tags: string[] | null = []) => {
+    if (tags?.includes("clothing")) return Box;
+    if (tags?.includes("tools")) return Wrench;
+    if (tags?.includes("books")) return BookOpen;
     return Box;
   };
 

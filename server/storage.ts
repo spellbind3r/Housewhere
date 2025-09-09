@@ -138,6 +138,7 @@ export class MemStorage implements IStorage {
       ...insertArea,
       id,
       createdAt: new Date(),
+      description: insertArea.description || null,
     };
     this.storageAreas.set(id, area);
     return area;
@@ -179,6 +180,9 @@ export class MemStorage implements IStorage {
       id,
       createdAt: now,
       updatedAt: now,
+      description: insertItem.description || null,
+      tags: insertItem.tags || null,
+      storageAreaId: insertItem.storageAreaId || null,
     };
     this.items.set(id, item);
     
@@ -297,11 +301,18 @@ export class MemStorage implements IStorage {
       ...insertHistory,
       id,
       timestamp: new Date(),
+      itemId: insertHistory.itemId || null,
+      previousStorageAreaId: insertHistory.previousStorageAreaId || null,
+      newStorageAreaId: insertHistory.newStorageAreaId || null,
+      previousStatus: insertHistory.previousStatus || null,
+      newStatus: insertHistory.newStatus || null,
     };
     
-    const itemHistories = this.itemHistories.get(insertHistory.itemId) || [];
-    itemHistories.push(history);
-    this.itemHistories.set(insertHistory.itemId, itemHistories);
+    if (insertHistory.itemId) {
+      const itemHistories = this.itemHistories.get(insertHistory.itemId) || [];
+      itemHistories.push(history);
+      this.itemHistories.set(insertHistory.itemId, itemHistories);
+    }
     
     return history;
   }

@@ -126,7 +126,7 @@ export default function StorageAreas() {
         </Card>
         
         {/* Render children */}
-        {area.children.map(child => renderStorageArea(child, level + 1))}
+        {area.children?.map(child => renderStorageArea(child, level + 1))}
       </div>
     );
   };

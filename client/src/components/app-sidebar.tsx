@@ -1,6 +1,7 @@
 import { Home, Search, Plus, Warehouse, Tags, AlertTriangle, ChevronRight, Building, DoorOpen } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import type { StorageArea } from "@shared/schema";
 import {
   Sidebar,
   SidebarContent,
@@ -34,11 +35,11 @@ const menuItems = [
 export function AppSidebar() {
   const [location] = useLocation();
   
-  const { data: storageAreas = [] } = useQuery({
+  const { data: storageAreas = [] } = useQuery<StorageArea[]>({
     queryKey: ["/api/storage-areas"],
   });
 
-  const topLevelAreas = storageAreas.filter((area: any) => !area.parentId);
+  const topLevelAreas = storageAreas.filter((area) => !area.parentId);
 
   return (
     <Sidebar data-testid="sidebar-main">
@@ -96,8 +97,8 @@ export function AppSidebar() {
   );
 }
 
-function StorageAreaNode({ area, level }: { area: any; level: number }) {
-  const { data: childAreas = [] } = useQuery({
+function StorageAreaNode({ area, level }: { area: StorageArea; level: number }) {
+  const { data: childAreas = [] } = useQuery<StorageArea[]>({
     queryKey: ["/api/storage-areas/parent", area.id],
   });
 
@@ -129,7 +130,7 @@ function StorageAreaNode({ area, level }: { area: any; level: number }) {
       </button>
       {childAreas.length > 0 && (
         <div className="mt-1 space-y-1">
-          {childAreas.map((childArea: any) => (
+          {childAreas.map((childArea) => (
             <StorageAreaNode key={childArea.id} area={childArea} level={level + 1} />
           ))}
         </div>
