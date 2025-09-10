@@ -61,8 +61,8 @@ export default function Search() {
   // Determine which results to show
   const getResults = () => {
     if (debouncedQuery) return searchResults;
-    if (selectedTag) return tagResults;
-    if (selectedStatus) return statusResults;
+    if (selectedTag && selectedTag !== "all" && selectedTag !== "") return tagResults;
+    if (selectedStatus && selectedStatus !== "all" && selectedStatus !== "") return statusResults;
     return [];
   };
 
@@ -71,8 +71,8 @@ export default function Search() {
 
   const clearFilters = () => {
     setSearchQuery("");
-    setSelectedTag("all");
-    setSelectedStatus("all");
+    setSelectedTag("");
+    setSelectedStatus("");
     setDebouncedQuery("");
     window.history.replaceState({}, '', '/search');
   };
