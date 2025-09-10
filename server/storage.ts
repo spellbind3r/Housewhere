@@ -6,8 +6,13 @@ import {
   type ItemHistory,
   type InsertItemHistory,
   type ItemWithLocation,
-  type StorageStats
+  type StorageStats,
+  storageAreas,
+  items,
+  itemHistory
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, ilike, sql, and, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -41,147 +46,65 @@ export interface IStorage {
   getItemWithLocation(itemId: string): Promise<ItemWithLocation | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private storageAreas: Map<string, StorageArea>;
-  private items: Map<string, Item>;
-  private itemHistories: Map<string, ItemHistory[]>;
-
+export class DatabaseStorage implements IStorage {
   constructor() {
-    this.storageAreas = new Map();
-    this.items = new Map();
-    this.itemHistories = new Map();
-    this.initializeDefaultData();
-  }
-
-  private initializeDefaultData() {
-    // Create some default storage areas
-    const mainHouse: StorageArea = {
-      id: "main-house",
-      name: "Main House",
-      description: "Primary living area",
-      type: "area",
-      parentId: null,
-      createdAt: new Date(),
-    };
-    
-    // Garage removed - users can create their own
-
-    const livingRoom: StorageArea = {
-      id: "living-room",
-      name: "Living Room",
-      description: "Main living space",
-      type: "room",
-      parentId: "main-house",
-      createdAt: new Date(),
-    };
-
-    const kitchen: StorageArea = {
-      id: "kitchen",
-      name: "Kitchen",
-      description: "Cooking and dining area",
-      type: "room",
-      parentId: "main-house",
-      createdAt: new Date(),
-    };
-
-    const bedroom: StorageArea = {
-      id: "bedroom",
-      name: "Bedroom",
-      description: "Master bedroom",
-      type: "room",
-      parentId: "main-house",
-      createdAt: new Date(),
-    };
-
-    const closet: StorageArea = {
-      id: "closet",
-      name: "Closet",
-      description: "Built-in wardrobe",
-      type: "storage_unit",
-      parentId: "bedroom",
-      createdAt: new Date(),
-    };
-
-    const topShelf: StorageArea = {
-      id: "top-shelf",
-      name: "Top Shelf",
-      description: "Upper storage section",
-      type: "section",
-      parentId: "closet",
-      createdAt: new Date(),
-    };
-
-    [mainHouse, livingRoom, kitchen, bedroom, closet, topShelf].forEach(area => {
-      this.storageAreas.set(area.id, area);
-    });
+    // Database tables are created via Drizzle migrations
+    // No need for initialization as we query the database directly
   }
 
   // Storage Areas
   async getStorageAreas(): Promise<StorageArea[]> {
-    return Array.from(this.storageAreas.values());
+    return await db.select().from(storageAreas).orderBy(storageAreas.createdAt);
   }
 
   async getStorageArea(id: string): Promise<StorageArea | undefined> {
-    return this.storageAreas.get(id);
+    const result = await db.select().from(storageAreas).where(eq(storageAreas.id, id)).limit(1);
+    return result[0];
   }
 
   async createStorageArea(insertArea: InsertStorageArea): Promise<StorageArea> {
-    const id = randomUUID();
-    const area: StorageArea = {
-      ...insertArea,
-      id,
-      createdAt: new Date(),
-      description: insertArea.description || null,
-    };
-    this.storageAreas.set(id, area);
-    return area;
+    const result = await db.insert(storageAreas).values(insertArea).returning();
+    return result[0];
   }
 
   async updateStorageArea(id: string, updates: Partial<InsertStorageArea>): Promise<StorageArea | undefined> {
-    const area = this.storageAreas.get(id);
-    if (!area) return undefined;
-    
-    const updatedArea = { ...area, ...updates };
-    this.storageAreas.set(id, updatedArea);
-    return updatedArea;
+    const result = await db
+      .update(storageAreas)
+      .set(updates)
+      .where(eq(storageAreas.id, id))
+      .returning();
+    return result[0];
   }
 
   async deleteStorageArea(id: string): Promise<boolean> {
-    return this.storageAreas.delete(id);
+    const result = await db.delete(storageAreas).where(eq(storageAreas.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
   }
 
   async getStorageAreasByParent(parentId: string | null): Promise<StorageArea[]> {
-    return Array.from(this.storageAreas.values()).filter(area => area.parentId === parentId);
+    if (parentId === null) {
+      return await db.select().from(storageAreas).where(sql`parent_id IS NULL`);
+    }
+    return await db.select().from(storageAreas).where(eq(storageAreas.parentId, parentId));
   }
 
   // Items
   async getItems(): Promise<Item[]> {
-    return Array.from(this.items.values()).sort((a, b) => 
-      new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-    );
+    return await db.select().from(items).orderBy(sql`created_at DESC`);
   }
 
   async getItem(id: string): Promise<Item | undefined> {
-    return this.items.get(id);
+    const result = await db.select().from(items).where(eq(items.id, id)).limit(1);
+    return result[0];
   }
 
   async createItem(insertItem: InsertItem): Promise<Item> {
-    const id = randomUUID();
-    const now = new Date();
-    const item: Item = {
-      ...insertItem,
-      id,
-      createdAt: now,
-      updatedAt: now,
-      description: insertItem.description || null,
-      tags: insertItem.tags || null,
-      storageAreaId: insertItem.storageAreaId || null,
-    };
-    this.items.set(id, item);
+    const result = await db.insert(items).values(insertItem).returning();
+    const item = result[0];
     
     // Create history entry
     await this.createItemHistory({
-      itemId: id,
+      itemId: item.id,
       action: "created",
       newStorageAreaId: insertItem.storageAreaId || null,
       newStatus: insertItem.status || "active",
@@ -193,35 +116,44 @@ export class MemStorage implements IStorage {
   }
 
   async updateItem(id: string, updates: Partial<InsertItem>): Promise<Item | undefined> {
-    const item = this.items.get(id);
-    if (!item) return undefined;
+    // Get the current item first
+    const currentItem = await this.getItem(id);
+    if (!currentItem) return undefined;
     
-    const updatedItem = { 
-      ...item, 
-      ...updates, 
-      updatedAt: new Date() 
+    // Update with current timestamp
+    const updatedValues = {
+      ...updates,
+      updatedAt: new Date()
     };
-    this.items.set(id, updatedItem);
+    
+    const result = await db
+      .update(items)
+      .set(updatedValues)
+      .where(eq(items.id, id))
+      .returning();
+    
+    const updatedItem = result[0];
+    if (!updatedItem) return undefined;
     
     // Create history entry for significant changes
-    if (updates.storageAreaId && updates.storageAreaId !== item.storageAreaId) {
+    if (updates.storageAreaId && updates.storageAreaId !== currentItem.storageAreaId) {
       await this.createItemHistory({
         itemId: id,
         action: "moved",
-        previousStorageAreaId: item.storageAreaId || null,
+        previousStorageAreaId: currentItem.storageAreaId || null,
         newStorageAreaId: updates.storageAreaId,
-        previousStatus: item.status,
+        previousStatus: currentItem.status,
         newStatus: updatedItem.status,
       });
     }
     
-    if (updates.status && updates.status !== item.status) {
+    if (updates.status && updates.status !== currentItem.status) {
       await this.createItemHistory({
         itemId: id,
         action: "status_changed",
-        previousStorageAreaId: item.storageAreaId || null,
-        newStorageAreaId: item.storageAreaId || null,
-        previousStatus: item.status,
+        previousStorageAreaId: currentItem.storageAreaId || null,
+        newStorageAreaId: currentItem.storageAreaId || null,
+        previousStatus: currentItem.status,
         newStatus: updates.status,
       });
     }
@@ -230,24 +162,32 @@ export class MemStorage implements IStorage {
   }
 
   async deleteItem(id: string): Promise<boolean> {
-    const deleted = this.items.delete(id);
-    if (deleted) {
-      this.itemHistories.delete(id);
-    }
-    return deleted;
+    // Delete associated history first
+    await db.delete(itemHistory).where(eq(itemHistory.itemId, id));
+    
+    // Delete the item
+    const result = await db.delete(items).where(eq(items.id, id));
+    return result.rowCount !== null && result.rowCount > 0;
   }
 
   async getItemsByStorageArea(storageAreaId: string): Promise<Item[]> {
-    return Array.from(this.items.values()).filter(item => item.storageAreaId === storageAreaId);
+    return await db.select().from(items).where(eq(items.storageAreaId, storageAreaId));
   }
 
   async searchItems(query: string): Promise<ItemWithLocation[]> {
-    const lowerQuery = query.toLowerCase();
-    const matchedItems = Array.from(this.items.values()).filter(item => 
-      item.name.toLowerCase().includes(lowerQuery) ||
-      (item.description && item.description.toLowerCase().includes(lowerQuery)) ||
-      (item.tags && item.tags.some(tag => tag.toLowerCase().includes(lowerQuery)))
-    );
+    const matchedItems = await db
+      .select()
+      .from(items)
+      .where(
+        sql`(
+          ${ilike(items.name, `%${query}%`)} OR 
+          ${ilike(items.description, `%${query}%`)} OR 
+          EXISTS (
+            SELECT 1 FROM unnest(${items.tags}) AS tag 
+            WHERE tag ILIKE ${'%' + query + '%'}
+          )
+        )`
+      );
     
     const itemsWithLocation = await Promise.all(
       matchedItems.map(async item => {
@@ -260,9 +200,10 @@ export class MemStorage implements IStorage {
   }
 
   async getItemsByTag(tag: string): Promise<ItemWithLocation[]> {
-    const matchedItems = Array.from(this.items.values()).filter(item => 
-      item.tags && item.tags.includes(tag)
-    );
+    const matchedItems = await db
+      .select()
+      .from(items)
+      .where(sql`${tag} = ANY(${items.tags})`);
     
     const itemsWithLocation = await Promise.all(
       matchedItems.map(async item => {
@@ -275,7 +216,7 @@ export class MemStorage implements IStorage {
   }
 
   async getItemsByStatus(status: string): Promise<ItemWithLocation[]> {
-    const matchedItems = Array.from(this.items.values()).filter(item => item.status === status);
+    const matchedItems = await db.select().from(items).where(eq(items.status, status));
     
     const itemsWithLocation = await Promise.all(
       matchedItems.map(async item => {
@@ -289,29 +230,16 @@ export class MemStorage implements IStorage {
 
   // Item History
   async createItemHistory(insertHistory: InsertItemHistory): Promise<ItemHistory> {
-    const id = randomUUID();
-    const history: ItemHistory = {
-      ...insertHistory,
-      id,
-      timestamp: new Date(),
-      itemId: insertHistory.itemId || null,
-      previousStorageAreaId: insertHistory.previousStorageAreaId || null,
-      newStorageAreaId: insertHistory.newStorageAreaId || null,
-      previousStatus: insertHistory.previousStatus || null,
-      newStatus: insertHistory.newStatus || null,
-    };
-    
-    if (insertHistory.itemId) {
-      const itemHistories = this.itemHistories.get(insertHistory.itemId) || [];
-      itemHistories.push(history);
-      this.itemHistories.set(insertHistory.itemId, itemHistories);
-    }
-    
-    return history;
+    const result = await db.insert(itemHistory).values(insertHistory).returning();
+    return result[0];
   }
 
   async getItemHistory(itemId: string): Promise<ItemHistory[]> {
-    return this.itemHistories.get(itemId) || [];
+    return await db
+      .select()
+      .from(itemHistory)
+      .where(eq(itemHistory.itemId, itemId))
+      .orderBy(sql`timestamp DESC`);
   }
 
   // Stats
@@ -347,7 +275,7 @@ export class MemStorage implements IStorage {
     let currentId: string | null = storageAreaId;
     
     while (currentId) {
-      const area = this.storageAreas.get(currentId);
+      const area = await this.getStorageArea(currentId);
       if (!area) break;
       
       path.unshift(area);
@@ -359,14 +287,20 @@ export class MemStorage implements IStorage {
 
   // Get all available tags
   async getAllTags(): Promise<string[]> {
+    const result = await db
+      .select({ tags: items.tags })
+      .from(items)
+      .where(sql`${items.tags} IS NOT NULL AND array_length(${items.tags}, 1) > 0`);
+    
     const allTags = new Set<string>();
-    Array.from(this.items.values()).forEach(item => {
-      if (item.tags) {
-        item.tags.forEach(tag => allTags.add(tag));
+    result.forEach(row => {
+      if (row.tags) {
+        row.tags.forEach(tag => allTags.add(tag));
       }
     });
+    
     return Array.from(allTags).sort();
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
