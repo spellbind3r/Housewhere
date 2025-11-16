@@ -142,7 +142,7 @@ export function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-background border border-border shadow-lg">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-card-border shadow-lg">
         <DialogHeader>
           <DialogTitle>Add New Item</DialogTitle>
         </DialogHeader>

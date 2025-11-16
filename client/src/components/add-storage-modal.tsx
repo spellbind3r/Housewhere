@@ -106,7 +106,7 @@ export function AddStorageModal({ isOpen, onClose }: AddStorageModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg bg-background border border-border shadow-lg">
+      <DialogContent className="max-w-lg bg-card border border-card-border shadow-lg">
         <DialogHeader>
           <DialogTitle>Add Storage Area</DialogTitle>
         </DialogHeader>
