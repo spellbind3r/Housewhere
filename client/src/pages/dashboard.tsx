@@ -1,21 +1,40 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Plus, Search, Warehouse, Box, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AddItemModal } from "../components/add-item-modal";
 import { AddStorageModal } from "../components/add-storage-modal";
+import { EditItemModal } from "../components/edit-item-modal";
 import { ItemList } from "../components/item-list";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { StorageStats, ItemWithLocation } from "@shared/schema";
 
 export default function Dashboard() {
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isAddStorageModalOpen, setIsAddStorageModalOpen] = useState(false);
+  const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<ItemWithLocation | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ItemWithLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: stats } = useQuery<StorageStats>({
     queryKey: ["/api/stats"],
@@ -36,6 +55,47 @@ export default function Dashboard() {
     if (searchQuery.trim()) {
       // Navigate to search page with query
       setLocation(`/search?q=${encodeURIComponent(searchQuery)}`);
+    }
+  };
+
+  const handleEditItem = (item: ItemWithLocation) => {
+    setItemToEdit(item);
+    setIsEditItemModalOpen(true);
+  };
+
+  const handleDeleteItem = (item: ItemWithLocation) => {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const deleteItemMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/items/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/items/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/search"] });
+      toast({
+        title: "Success",
+        description: "Item deleted successfully",
+      });
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteItemMutation.mutate(itemToDelete.id);
     }
   };
 
@@ -158,7 +218,11 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Recently added or modified items</p>
               </CardHeader>
               <CardContent className="p-6">
-                <ItemList items={recentItems} />
+                <ItemList
+                  items={recentItems}
+                  onEdit={handleEditItem}
+                  onDelete={handleDeleteItem}
+                />
               </CardContent>
             </Card>
           </div>
@@ -247,14 +311,46 @@ export default function Dashboard() {
       </div>
 
       {/* Modals */}
-      <AddItemModal 
-        isOpen={isAddItemModalOpen} 
-        onClose={() => setIsAddItemModalOpen(false)} 
+      <AddItemModal
+        isOpen={isAddItemModalOpen}
+        onClose={() => setIsAddItemModalOpen(false)}
       />
-      <AddStorageModal 
-        isOpen={isAddStorageModalOpen} 
-        onClose={() => setIsAddStorageModalOpen(false)} 
+      <AddStorageModal
+        isOpen={isAddStorageModalOpen}
+        onClose={() => setIsAddStorageModalOpen(false)}
       />
+      <EditItemModal
+        isOpen={isEditItemModalOpen}
+        onClose={() => {
+          setIsEditItemModalOpen(false);
+          setItemToEdit(null);
+        }}
+        item={itemToEdit}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="!bg-white !text-gray-900 border-2 border-gray-300">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="!text-gray-900">Delete Item</AlertDialogTitle>
+            <AlertDialogDescription className="!text-gray-600">
+              Are you sure you want to delete "{itemToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteItemMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteItemMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteItemMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

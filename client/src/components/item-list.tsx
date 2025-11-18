@@ -5,9 +5,11 @@ import type { ItemWithLocation } from "@shared/schema";
 
 interface ItemListProps {
   items: ItemWithLocation[];
+  onEdit?: (item: ItemWithLocation) => void;
+  onDelete?: (item: ItemWithLocation) => void;
 }
 
-export function ItemList({ items }: ItemListProps) {
+export function ItemList({ items, onEdit, onDelete }: ItemListProps) {
   const getItemIcon = (tags: string[] | null = []) => {
     if (tags?.includes("clothing")) return Box;
     if (tags?.includes("tools")) return Wrench;
@@ -90,20 +92,28 @@ export function ItemList({ items }: ItemListProps) {
                 {item.createdAt ? formatTimeAgo(item.createdAt) : "Unknown"}
               </p>
               <div className="flex space-x-2 mt-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  data-testid={`button-edit-${item.id}`}
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  data-testid={`button-delete-${item.id}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                {onEdit && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(item)}
+                    className="text-primary hover:text-primary hover:bg-primary/10"
+                    data-testid={`button-edit-${item.id}`}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete(item)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                    data-testid={`button-delete-${item.id}`}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
               </div>
             </div>
           </div>

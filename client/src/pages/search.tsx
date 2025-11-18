@@ -1,12 +1,25 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Search as SearchIcon, Filter, Tag, AlertTriangle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ItemList } from "@/components/item-list";
+import { EditItemModal } from "@/components/edit-item-modal";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { ItemWithLocation } from "@shared/schema";
 
 export default function Search() {
@@ -14,6 +27,12 @@ export default function Search() {
   const [selectedTag, setSelectedTag] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [isEditItemModalOpen, setIsEditItemModalOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<ItemWithLocation | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ItemWithLocation | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Get query parameters from URL
   useEffect(() => {
@@ -83,6 +102,49 @@ export default function Search() {
   };
 
   const hasActiveFilters = debouncedQuery || (selectedTag && selectedTag !== "all") || (selectedStatus && selectedStatus !== "all");
+
+  const handleEditItem = (item: ItemWithLocation) => {
+    setItemToEdit(item);
+    setIsEditItemModalOpen(true);
+  };
+
+  const handleDeleteItem = (item: ItemWithLocation) => {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const deleteItemMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/items/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/items"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/items/recent"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/search"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/items/tag"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/items/status"] });
+      toast({
+        title: "Success",
+        description: "Item deleted successfully",
+      });
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete item",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteItemMutation.mutate(itemToDelete.id);
+    }
+  };
 
   return (
     <div className="flex-1 overflow-auto">
@@ -234,13 +296,51 @@ export default function Search() {
                     </Button>
                   </div>
                 ) : (
-                  <ItemList items={results} />
+                  <ItemList
+                    items={results}
+                    onEdit={handleEditItem}
+                    onDelete={handleDeleteItem}
+                  />
                 )}
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Edit Item Modal */}
+      <EditItemModal
+        isOpen={isEditItemModalOpen}
+        onClose={() => {
+          setIsEditItemModalOpen(false);
+          setItemToEdit(null);
+        }}
+        item={itemToEdit}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="!bg-white !text-gray-900 border-2 border-gray-300">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="!text-gray-900">Delete Item</AlertDialogTitle>
+            <AlertDialogDescription className="!text-gray-600">
+              Are you sure you want to delete "{itemToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteItemMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteItemMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteItemMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

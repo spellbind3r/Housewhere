@@ -40,6 +40,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/storage-areas/:id", async (req, res) => {
+    try {
+      const validatedData = insertStorageAreaSchema.partial().parse(req.body);
+      const area = await storage.updateStorageArea(req.params.id, validatedData);
+      if (!area) {
+        return res.status(404).json({ message: "Storage area not found" });
+      }
+      res.json(area);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update storage area" });
+    }
+  });
+
+  app.delete("/api/storage-areas/:id", async (req, res) => {
+    try {
+      // Check if storage area has items
+      const items = await storage.getItemsByStorageArea(req.params.id);
+      if (items.length > 0) {
+        return res.status(400).json({
+          message: `Cannot delete storage area: ${items.length} item(s) are stored here. Please move or delete items first.`
+        });
+      }
+
+      const success = await storage.deleteStorageArea(req.params.id);
+      if (!success) {
+        return res.status(404).json({ message: "Storage area not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete storage area" });
+    }
+  });
+
   app.get("/api/storage-areas/parent/:parentId", async (req, res) => {
     try {
       const parentId = req.params.parentId === "null" ? null : req.params.parentId;

@@ -15,14 +15,17 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { AddStorageModal } from "@/components/add-storage-modal";
+import { EditStorageModal } from "@/components/edit-storage-modal";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { StorageArea } from "@shared/schema";
 
 export default function StorageAreas() {
   const [isAddStorageModalOpen, setIsAddStorageModalOpen] = useState(false);
+  const [isEditStorageModalOpen, setIsEditStorageModalOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [storageToDelete, setStorageToDelete] = useState<StorageArea | null>(null);
+  const [storageToEdit, setStorageToEdit] = useState<StorageArea | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -70,6 +73,11 @@ export default function StorageAreas() {
     if (storageToDelete) {
       deleteStorageAreaMutation.mutate(storageToDelete.id);
     }
+  };
+
+  const handleEditClick = (area: StorageArea) => {
+    setStorageToEdit(area);
+    setIsEditStorageModalOpen(true);
   };
 
   const getIcon = (type: string) => {
@@ -183,6 +191,15 @@ export default function StorageAreas() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  onClick={() => handleEditClick(area)}
+                  className="text-primary hover:text-primary hover:bg-primary/10"
+                  data-testid={`button-edit-${area.id}`}
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => handleDeleteClick(area)}
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   data-testid={`button-delete-${area.id}`}
@@ -283,6 +300,16 @@ export default function StorageAreas() {
       <AddStorageModal
         isOpen={isAddStorageModalOpen}
         onClose={() => setIsAddStorageModalOpen(false)}
+      />
+
+      {/* Edit Storage Modal */}
+      <EditStorageModal
+        isOpen={isEditStorageModalOpen}
+        onClose={() => {
+          setIsEditStorageModalOpen(false);
+          setStorageToEdit(null);
+        }}
+        storageArea={storageToEdit}
       />
 
       {/* Delete Confirmation Dialog */}
