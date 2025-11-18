@@ -106,9 +106,12 @@ export function AddStorageModal({ isOpen, onClose }: AddStorageModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg bg-card border border-card-border shadow-lg">
+      <DialogContent className="max-w-lg bg-card text-card-foreground border border-card-border shadow-lg">
         <DialogHeader>
-          <DialogTitle>Add Storage Area</DialogTitle>
+          <DialogTitle className="text-card-foreground">Add Storage Area</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Create a new storage location in your hierarchy.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>

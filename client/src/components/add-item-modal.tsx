@@ -142,9 +142,12 @@ export function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border border-card-border shadow-lg">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card text-card-foreground border border-card-border shadow-lg">
         <DialogHeader>
-          <DialogTitle>Add New Item</DialogTitle>
+          <DialogTitle className="text-card-foreground">Add New Item</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
+            Fill in the details to add a new item to your inventory.
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
