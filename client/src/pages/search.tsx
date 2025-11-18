@@ -42,7 +42,12 @@ export default function Search() {
 
   // Search items based on query
   const { data: searchResults = [], isLoading: isSearching } = useQuery<ItemWithLocation[]>({
-    queryKey: ["/api/search", debouncedQuery],
+    queryKey: ["/api/search", { q: debouncedQuery }],
+    queryFn: async () => {
+      const res = await fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}`);
+      if (!res.ok) throw new Error('Search failed');
+      return res.json();
+    },
     enabled: debouncedQuery.length > 0,
   });
 
