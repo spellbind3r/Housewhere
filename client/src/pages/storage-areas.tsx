@@ -1,18 +1,76 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, Building, DoorOpen, Package, Grid } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Building, DoorOpen, Package, Grid, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AddStorageModal } from "@/components/add-storage-modal";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { StorageArea } from "@shared/schema";
 
 export default function StorageAreas() {
   const [isAddStorageModalOpen, setIsAddStorageModalOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [storageToDelete, setStorageToDelete] = useState<StorageArea | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: storageAreas = [] } = useQuery<StorageArea[]>({
     queryKey: ["/api/storage-areas"],
   });
+
+  const deleteStorageAreaMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/storage-areas/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/storage-areas"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+      toast({
+        title: "Success",
+        description: "Storage area deleted successfully",
+      });
+      setDeleteDialogOpen(false);
+      setStorageToDelete(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete storage area",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDeleteClick = (area: StorageArea & { children: StorageArea[] }) => {
+    if (area.children.length > 0) {
+      toast({
+        title: "Cannot Delete",
+        description: "This storage area has sub-locations. Delete those first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setStorageToDelete(area);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (storageToDelete) {
+      deleteStorageAreaMutation.mutate(storageToDelete.id);
+    }
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -116,10 +174,21 @@ export default function StorageAreas() {
                   </Badge>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">
-                  {area.children.length} sub-locations
-                </p>
+              <div className="flex items-center space-x-2">
+                <div className="text-right mr-4">
+                  <p className="text-xs text-muted-foreground">
+                    {area.children.length} sub-locations
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteClick(area)}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  data-testid={`button-delete-${area.id}`}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -211,10 +280,31 @@ export default function StorageAreas() {
       </div>
 
       {/* Add Storage Modal */}
-      <AddStorageModal 
-        isOpen={isAddStorageModalOpen} 
-        onClose={() => setIsAddStorageModalOpen(false)} 
+      <AddStorageModal
+        isOpen={isAddStorageModalOpen}
+        onClose={() => setIsAddStorageModalOpen(false)}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="!bg-white !text-gray-900 border-2 border-gray-300">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="!text-gray-900">Delete Storage Area?</AlertDialogTitle>
+            <AlertDialogDescription className="!text-gray-600">
+              Are you sure you want to delete "{storageToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

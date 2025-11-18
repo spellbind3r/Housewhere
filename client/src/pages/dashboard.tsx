@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Plus, Search, Warehouse, Box, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isAddStorageModalOpen, setIsAddStorageModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [, setLocation] = useLocation();
 
   const { data: stats } = useQuery<StorageStats>({
     queryKey: ["/api/stats"],
@@ -33,7 +35,7 @@ export default function Dashboard() {
     e.preventDefault();
     if (searchQuery.trim()) {
       // Navigate to search page with query
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+      setLocation(`/search?q=${encodeURIComponent(searchQuery)}`);
     }
   };
 
@@ -74,7 +76,7 @@ export default function Dashboard() {
       <div className="p-6">
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setLocation('/search')}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -93,7 +95,7 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setLocation('/storage-areas')}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -185,10 +187,10 @@ export default function Dashboard() {
                     <Warehouse className="mr-2 w-4 h-4" />
                     Add Storage Area
                   </Button>
-                  <Button 
+                  <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => window.location.href = "/search"}
+                    onClick={() => setLocation("/search")}
                     data-testid="button-advanced-search"
                   >
                     <Search className="mr-2 w-4 h-4" />
@@ -204,11 +206,11 @@ export default function Dashboard() {
                 <h3 className="text-lg font-semibold text-foreground mb-4">Popular Tags</h3>
                 <div className="flex flex-wrap gap-2">
                   {popularTags.map((tag) => (
-                    <Badge 
+                    <Badge
                       key={tag}
                       variant="secondary"
                       className="cursor-pointer hover:bg-secondary/80"
-                      onClick={() => window.location.href = `/search?tag=${encodeURIComponent(tag)}`}
+                      onClick={() => setLocation(`/search?tag=${encodeURIComponent(tag)}`)}
                       data-testid={`button-tag-${tag}`}
                     >
                       {tag}
@@ -229,10 +231,10 @@ export default function Dashboard() {
                   <p className="text-sm text-destructive/80 mb-4">
                     You have {stats.missingItems} items marked as missing that need attention.
                   </p>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => window.location.href = "/search?status=missing"}
+                    onClick={() => setLocation("/search?status=missing")}
                     data-testid="button-view-missing"
                   >
                     Review missing items →
