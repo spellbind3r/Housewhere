@@ -175,6 +175,49 @@ export function EditItemModal({ isOpen, onClose, item }: EditItemModalProps) {
     }
   }, [isOpen]);
 
+  // Reset child selections when parent changes (but not during initial item load)
+  useEffect(() => {
+    // When area changes, clear room/unit/section if they're no longer valid
+    if (selectedArea) {
+      const validRooms = allStorageAreas.filter(
+        (area) => area.type === "room" && area.parentId === selectedArea
+      );
+      const currentRoom = selectedRoom;
+      if (currentRoom && !validRooms.find(r => r.id === currentRoom)) {
+        setSelectedRoom("");
+        setSelectedStorageUnit("");
+        form.setValue("storageAreaId", "");
+      }
+    }
+  }, [selectedArea, allStorageAreas]);
+
+  useEffect(() => {
+    // When room changes, clear unit/section if they're no longer valid
+    if (selectedRoom) {
+      const validUnits = allStorageAreas.filter(
+        (area) => area.type === "storage_unit" && area.parentId === selectedRoom
+      );
+      const currentUnit = selectedStorageUnit;
+      if (currentUnit && !validUnits.find(u => u.id === currentUnit)) {
+        setSelectedStorageUnit("");
+        form.setValue("storageAreaId", "");
+      }
+    }
+  }, [selectedRoom, allStorageAreas]);
+
+  useEffect(() => {
+    // When storage unit changes, clear section if it's no longer valid
+    if (selectedStorageUnit) {
+      const validSections = allStorageAreas.filter(
+        (area) => area.type === "section" && area.parentId === selectedStorageUnit
+      );
+      const currentSection = form.getValues("storageAreaId");
+      if (currentSection && !validSections.find(s => s.id === currentSection)) {
+        form.setValue("storageAreaId", "");
+      }
+    }
+  }, [selectedStorageUnit, allStorageAreas]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto !bg-white !text-gray-900 border-2 border-gray-300 shadow-2xl">

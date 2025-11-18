@@ -140,6 +140,25 @@ export function AddItemModal({ isOpen, onClose }: AddItemModalProps) {
     }
   }, [isOpen, form]);
 
+  // Reset child selections when parent changes
+  useEffect(() => {
+    // When area changes, clear all child selections
+    setSelectedRoom("");
+    setSelectedStorageUnit("");
+    form.setValue("storageAreaId", "");
+  }, [selectedArea]);
+
+  useEffect(() => {
+    // When room changes, clear storage unit and section
+    setSelectedStorageUnit("");
+    form.setValue("storageAreaId", "");
+  }, [selectedRoom]);
+
+  useEffect(() => {
+    // When storage unit changes, clear section
+    form.setValue("storageAreaId", "");
+  }, [selectedStorageUnit]);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto !bg-white !text-gray-900 border-2 border-gray-300 shadow-2xl">
