@@ -11,5 +11,16 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
+// Check if DATABASE_URL is still the placeholder value
+if (process.env.DATABASE_URL === "your_database_url_here" ||
+    process.env.DATABASE_URL.includes("your_database_url_here")) {
+  console.error("\n❌ DATABASE ERROR: DATABASE_URL is still set to placeholder value!");
+  console.error("Please update your .env file with your actual Neon database URL.");
+  console.error("Get your database URL from: https://console.neon.tech/\n");
+  throw new Error(
+    "DATABASE_URL is not configured. Please update .env file with your actual Neon database connection string."
+  );
+}
+
 export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 export const db = drizzle({ client: pool, schema });
