@@ -8,6 +8,7 @@ import { AppSidebar } from "./components/app-sidebar";
 import Dashboard from "./pages/dashboard";
 import Search from "./pages/search";
 import StorageAreas from "./pages/storage-areas";
+import StorageAreaItems from "./pages/storage-area-items";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/search" component={Search} />
+      <Route path="/storage-areas/:id/items" component={StorageAreaItems} />
       <Route path="/storage-areas" component={StorageAreas} />
       <Route component={NotFound} />
     </Switch>

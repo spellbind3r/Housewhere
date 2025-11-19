@@ -200,6 +200,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/items/storage/:storageAreaId", async (req, res) => {
+    try {
+      const items = await storage.getItemsByStorageArea(req.params.storageAreaId);
+      const itemsWithLocation = await Promise.all(
+        items.map(item => storage.getItemWithLocation(item.id))
+      );
+      res.json(itemsWithLocation.filter(item => item !== undefined));
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch items by storage area" });
+    }
+  });
+
   // Stats endpoint
   app.get("/api/stats", async (req, res) => {
     try {

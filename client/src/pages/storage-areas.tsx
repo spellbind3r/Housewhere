@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Plus, Building, DoorOpen, Package, Grid, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -28,6 +29,7 @@ export default function StorageAreas() {
   const [storageToEdit, setStorageToEdit] = useState<StorageArea | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
   const { data: storageAreas = [] } = useQuery<StorageArea[]>({
     queryKey: ["/api/storage-areas"],
@@ -161,7 +163,10 @@ export default function StorageAreas() {
         <Card className="hover-elevate" style={{ marginLeft: `${level * 1.5}rem` }}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
+              <div
+                className="flex items-center space-x-3 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => setLocation(`/storage-areas/${area.id}/items`)}
+              >
                 <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                   <Icon className="text-primary w-5 h-5" />
                 </div>
@@ -174,7 +179,7 @@ export default function StorageAreas() {
                       {area.description}
                     </p>
                   )}
-                  <Badge 
+                  <Badge
                     className={`text-xs mt-1 ${getTypeColor(area.type)}`}
                     data-testid={`badge-storage-type-${area.id}`}
                   >
@@ -191,7 +196,10 @@ export default function StorageAreas() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleEditClick(area)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditClick(area);
+                  }}
                   className="text-primary hover:text-primary hover:bg-primary/10"
                   data-testid={`button-edit-${area.id}`}
                 >
@@ -200,7 +208,10 @@ export default function StorageAreas() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleDeleteClick(area)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteClick(area);
+                  }}
                   className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   data-testid={`button-delete-${area.id}`}
                 >

@@ -48,6 +48,7 @@ export function EditItemModal({ isOpen, onClose, item }: EditItemModalProps) {
   const [selectedArea, setSelectedArea] = useState<string>("");
   const [selectedRoom, setSelectedRoom] = useState<string>("");
   const [selectedStorageUnit, setSelectedStorageUnit] = useState<string>("");
+  const [isInitializing, setIsInitializing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -70,6 +71,8 @@ export function EditItemModal({ isOpen, onClose, item }: EditItemModalProps) {
   // Update form and dropdowns when item changes
   useEffect(() => {
     if (item && isOpen) {
+      setIsInitializing(true);
+
       form.reset({
         name: item.name,
         description: item.description || "",
@@ -99,6 +102,9 @@ export function EditItemModal({ isOpen, onClose, item }: EditItemModalProps) {
           form.setValue("storageAreaId", area.id);
         }
       }
+
+      // Delay before allowing cascading resets
+      setTimeout(() => setIsInitializing(false), 100);
     }
   }, [item, isOpen, form]);
 
@@ -172,13 +178,15 @@ export function EditItemModal({ isOpen, onClose, item }: EditItemModalProps) {
       setSelectedArea("");
       setSelectedRoom("");
       setSelectedStorageUnit("");
+      setIsInitializing(false);
     }
   }, [isOpen]);
 
   // Reset child selections when parent changes (but not during initial item load)
   useEffect(() => {
     // When area changes, clear room/unit/section if they're no longer valid
-    if (selectedArea) {
+    // Skip if we're initializing from item data
+    if (selectedArea && !isInitializing) {
       const validRooms = allStorageAreas.filter(
         (area) => area.type === "room" && area.parentId === selectedArea
       );
@@ -189,11 +197,11 @@ export function EditItemModal({ isOpen, onClose, item }: EditItemModalProps) {
         form.setValue("storageAreaId", "");
       }
     }
-  }, [selectedArea, allStorageAreas]);
+  }, [selectedArea, allStorageAreas, isInitializing]);
 
   useEffect(() => {
     // When room changes, clear unit/section if they're no longer valid
-    if (selectedRoom) {
+    if (selectedRoom && !isInitializing) {
       const validUnits = allStorageAreas.filter(
         (area) => area.type === "storage_unit" && area.parentId === selectedRoom
       );
@@ -203,11 +211,11 @@ export function EditItemModal({ isOpen, onClose, item }: EditItemModalProps) {
         form.setValue("storageAreaId", "");
       }
     }
-  }, [selectedRoom, allStorageAreas]);
+  }, [selectedRoom, allStorageAreas, isInitializing]);
 
   useEffect(() => {
     // When storage unit changes, clear section if it's no longer valid
-    if (selectedStorageUnit) {
+    if (selectedStorageUnit && !isInitializing) {
       const validSections = allStorageAreas.filter(
         (area) => area.type === "section" && area.parentId === selectedStorageUnit
       );
@@ -216,7 +224,7 @@ export function EditItemModal({ isOpen, onClose, item }: EditItemModalProps) {
         form.setValue("storageAreaId", "");
       }
     }
-  }, [selectedStorageUnit, allStorageAreas]);
+  }, [selectedStorageUnit, allStorageAreas, isInitializing]);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
