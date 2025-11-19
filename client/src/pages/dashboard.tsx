@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { Plus, Search, Warehouse, Box, AlertTriangle } from "lucide-react";
+import { Plus, Search, Warehouse, Box, AlertTriangle, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,7 @@ import {
 import { AddItemModal } from "../components/add-item-modal";
 import { AddStorageModal } from "../components/add-storage-modal";
 import { EditItemModal } from "../components/edit-item-modal";
+import { QRScannerModal } from "../components/qr-scanner-modal";
 import { ItemList } from "../components/item-list";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -31,6 +32,7 @@ export default function Dashboard() {
   const [itemToEdit, setItemToEdit] = useState<ItemWithLocation | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ItemWithLocation | null>(null);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -260,6 +262,15 @@ export default function Dashboard() {
                     <Search className="mr-2 w-4 h-4" />
                     Advanced Search
                   </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setIsQRScannerOpen(true)}
+                    data-testid="button-scan-qr"
+                  >
+                    <ScanLine className="mr-2 w-4 h-4" />
+                    Scan QR Code
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -351,6 +362,12 @@ export default function Dashboard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* QR Scanner Modal */}
+      <QRScannerModal
+        isOpen={isQRScannerOpen}
+        onClose={() => setIsQRScannerOpen(false)}
+      />
     </div>
   );
 }
