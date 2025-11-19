@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { ItemList } from "@/components/item-list";
 import { EditItemModal } from "@/components/edit-item-modal";
+import { QRCodeModal } from "@/components/qr-code-modal";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { ItemWithLocation, StorageArea } from "@shared/schema";
@@ -28,6 +29,7 @@ export default function StorageAreaItems() {
   const [itemToEdit, setItemToEdit] = useState<ItemWithLocation | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ItemWithLocation | null>(null);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -132,6 +134,17 @@ export default function StorageAreaItems() {
               </div>
             </div>
           </div>
+
+          {/* QR Code Button */}
+          {storageArea && (
+            <Button
+              variant="outline"
+              onClick={() => setIsQRModalOpen(true)}
+            >
+              <QrCode className="w-4 h-4 mr-2" />
+              Show QR Code
+            </Button>
+          )}
         </div>
       </header>
 
@@ -199,6 +212,16 @@ export default function StorageAreaItems() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* QR Code Modal */}
+      {storageArea && (
+        <QRCodeModal
+          isOpen={isQRModalOpen}
+          onClose={() => setIsQRModalOpen(false)}
+          storageAreaId={storageAreaId}
+          storageAreaName={storageArea.name}
+        />
+      )}
     </div>
   );
 }
