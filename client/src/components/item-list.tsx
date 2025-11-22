@@ -1,13 +1,19 @@
-import { Edit, Trash2, Box, Wrench, BookOpen } from "lucide-react";
+import { useState } from "react";
+import { Edit, Trash2, Box, Wrench, BookOpen, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { QRCodeModal } from "./qr-code-modal";
 import type { ItemWithLocation } from "@shared/schema";
 
 interface ItemListProps {
   items: ItemWithLocation[];
+  onEditItem?: (item: ItemWithLocation) => void;
+  onDeleteItem?: (itemId: string) => void;
 }
 
-export function ItemList({ items }: ItemListProps) {
+export function ItemList({ items, onEditItem, onDeleteItem }: ItemListProps) {
+  const [qrModalItem, setQrModalItem] = useState<ItemWithLocation | null>(null);
+
   const getItemIcon = (tags: string[] | null = []) => {
     if (tags?.includes("clothing")) return Box;
     if (tags?.includes("tools")) return Wrench;
@@ -90,17 +96,30 @@ export function ItemList({ items }: ItemListProps) {
                 {item.createdAt ? formatTimeAgo(item.createdAt) : "Unknown"}
               </p>
               <div className="flex space-x-2 mt-2">
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
+                  onClick={() => setQrModalItem(item)}
+                  data-testid={`button-qr-${item.id}`}
+                  title="Generate QR Code"
+                >
+                  <QrCode className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEditItem?.(item)}
                   data-testid={`button-edit-${item.id}`}
+                  title="Edit Item"
                 >
                   <Edit className="w-4 h-4" />
                 </Button>
-                <Button 
-                  variant="ghost" 
+                <Button
+                  variant="ghost"
                   size="sm"
+                  onClick={() => onDeleteItem?.(item.id)}
                   data-testid={`button-delete-${item.id}`}
+                  title="Delete Item"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -109,6 +128,15 @@ export function ItemList({ items }: ItemListProps) {
           </div>
         );
       })}
+
+      {qrModalItem && (
+        <QRCodeModal
+          isOpen={!!qrModalItem}
+          onClose={() => setQrModalItem(null)}
+          itemId={qrModalItem.id}
+          itemName={qrModalItem.name}
+        />
+      )}
     </div>
   );
 }

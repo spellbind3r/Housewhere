@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Home, Search, Plus, Warehouse, Tags, AlertTriangle, ChevronRight, Building, DoorOpen } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -98,6 +99,7 @@ export function AppSidebar() {
 }
 
 function StorageAreaNode({ area, level }: { area: StorageArea; level: number }) {
+  const [isExpanded, setIsExpanded] = useState(true);
   const { data: childAreas = [] } = useQuery<StorageArea[]>({
     queryKey: ["/api/storage-areas/parent", area.id],
   });
@@ -117,18 +119,32 @@ function StorageAreaNode({ area, level }: { area: StorageArea; level: number }) 
 
   const Icon = getIcon(area.type);
 
+  const handleClick = () => {
+    if (childAreas.length > 0) {
+      setIsExpanded(!isExpanded);
+    } else {
+      // Navigate to search page filtered by this storage area
+      window.location.href = `/search?storageArea=${area.id}`;
+    }
+  };
+
   return (
     <div className="text-sm">
-      <button 
+      <button
+        onClick={handleClick}
         className="flex items-center space-x-2 w-full text-left px-3 py-1.5 text-muted-foreground hover:text-foreground hover:bg-accent rounded-sm transition-colors"
         data-testid={`button-storage-area-${area.id}`}
         style={{ paddingLeft: `${0.75 + level * 1.5}rem` }}
       >
-        {childAreas.length > 0 && <ChevronRight className="text-xs w-3 h-3" />}
+        {childAreas.length > 0 && (
+          <ChevronRight
+            className={`text-xs w-3 h-3 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+          />
+        )}
         <Icon className="text-xs w-3 h-3" />
         <span>{area.name}</span>
       </button>
-      {childAreas.length > 0 && (
+      {childAreas.length > 0 && isExpanded && (
         <div className="mt-1 space-y-1">
           {childAreas.map((childArea) => (
             <StorageAreaNode key={childArea.id} area={childArea} level={level + 1} />

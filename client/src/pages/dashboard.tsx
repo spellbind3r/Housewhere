@@ -1,18 +1,22 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Warehouse, Box, AlertTriangle } from "lucide-react";
+import { Plus, Search, Warehouse, Box, AlertTriangle, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AddItemModal } from "../components/add-item-modal";
 import { AddStorageModal } from "../components/add-storage-modal";
+import { QRScannerModal } from "../components/qr-scanner-modal";
+import { EditItemModal } from "../components/edit-item-modal";
 import { ItemList } from "../components/item-list";
 import type { StorageStats, ItemWithLocation } from "@shared/schema";
 
 export default function Dashboard() {
   const [isAddItemModalOpen, setIsAddItemModalOpen] = useState(false);
   const [isAddStorageModalOpen, setIsAddStorageModalOpen] = useState(false);
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<ItemWithLocation | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const { data: stats } = useQuery<StorageStats>({
@@ -156,7 +160,10 @@ export default function Dashboard() {
                 <p className="text-sm text-muted-foreground">Recently added or modified items</p>
               </CardHeader>
               <CardContent className="p-6">
-                <ItemList items={recentItems} />
+                <ItemList
+                  items={recentItems}
+                  onEditItem={setEditingItem}
+                />
               </CardContent>
             </Card>
           </div>
@@ -185,7 +192,7 @@ export default function Dashboard() {
                     <Warehouse className="mr-2 w-4 h-4" />
                     Add Storage Area
                   </Button>
-                  <Button 
+                  <Button
                     variant="outline"
                     className="w-full justify-start"
                     onClick={() => window.location.href = "/search"}
@@ -193,6 +200,15 @@ export default function Dashboard() {
                   >
                     <Search className="mr-2 w-4 h-4" />
                     Advanced Search
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => setIsQRScannerOpen(true)}
+                    data-testid="button-scan-qr"
+                  >
+                    <QrCode className="mr-2 w-4 h-4" />
+                    Scan QR Code
                   </Button>
                 </div>
               </CardContent>
@@ -245,14 +261,25 @@ export default function Dashboard() {
       </div>
 
       {/* Modals */}
-      <AddItemModal 
-        isOpen={isAddItemModalOpen} 
-        onClose={() => setIsAddItemModalOpen(false)} 
+      <AddItemModal
+        isOpen={isAddItemModalOpen}
+        onClose={() => setIsAddItemModalOpen(false)}
       />
-      <AddStorageModal 
-        isOpen={isAddStorageModalOpen} 
-        onClose={() => setIsAddStorageModalOpen(false)} 
+      <AddStorageModal
+        isOpen={isAddStorageModalOpen}
+        onClose={() => setIsAddStorageModalOpen(false)}
       />
+      <QRScannerModal
+        isOpen={isQRScannerOpen}
+        onClose={() => setIsQRScannerOpen(false)}
+      />
+      {editingItem && (
+        <EditItemModal
+          isOpen={!!editingItem}
+          onClose={() => setEditingItem(null)}
+          item={editingItem}
+        />
+      )}
     </div>
   );
 }

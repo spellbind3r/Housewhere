@@ -87,9 +87,10 @@ export default function StorageAreas() {
 
   const hierarchy = buildHierarchy(storageAreas);
 
-  const renderStorageArea = (area: StorageArea & { children: StorageArea[] }, level = 0) => {
+  const renderStorageArea = (area: StorageArea & { children?: StorageArea[] }, level = 0) => {
     const Icon = getIcon(area.type);
-    
+    const children = area.children || [];
+
     return (
       <div key={area.id} className="space-y-2">
         <Card className="hover-elevate" style={{ marginLeft: `${level * 1.5}rem` }}>
@@ -108,7 +109,7 @@ export default function StorageAreas() {
                       {area.description}
                     </p>
                   )}
-                  <Badge 
+                  <Badge
                     className={`text-xs mt-1 ${getTypeColor(area.type)}`}
                     data-testid={`badge-storage-type-${area.id}`}
                   >
@@ -118,15 +119,15 @@ export default function StorageAreas() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">
-                  {area.children.length} sub-locations
+                  {children.length} sub-locations
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         {/* Render children */}
-        {area.children?.map(child => renderStorageArea(child, level + 1))}
+        {children.map(child => renderStorageArea(child, level + 1))}
       </div>
     );
   };
