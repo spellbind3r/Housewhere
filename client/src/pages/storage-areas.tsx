@@ -58,8 +58,9 @@ export default function StorageAreas() {
     },
   });
 
-  const handleDeleteClick = (area: StorageArea & { children: StorageArea[] }) => {
-    if (area.children.length > 0) {
+  const handleDeleteClick = (area: StorageArea & { children?: StorageArea[] }) => {
+    const children = area.children || [];
+    if (children.length > 0) {
       toast({
         title: "Cannot Delete",
         description: "This storage area has sub-locations. Delete those first.",
@@ -155,8 +156,9 @@ export default function StorageAreas() {
 
   const hierarchy = buildHierarchy(storageAreas);
 
-  const renderStorageArea = (area: StorageArea & { children: StorageArea[] }, level = 0) => {
+  const renderStorageArea = (area: StorageArea & { children?: StorageArea[] }, level = 0) => {
     const Icon = getIcon(area.type);
+    const children = area.children || [];
     
     return (
       <div key={area.id} className="space-y-2">
@@ -190,7 +192,7 @@ export default function StorageAreas() {
               <div className="flex items-center space-x-2">
                 <div className="text-right mr-4">
                   <p className="text-xs text-muted-foreground">
-                    {area.children.length} sub-locations
+                    {children.length} sub-locations
                   </p>
                 </div>
                 <Button
@@ -223,7 +225,7 @@ export default function StorageAreas() {
         </Card>
         
         {/* Render children */}
-        {area.children?.map(child => renderStorageArea(child, level + 1))}
+        {children.map(child => renderStorageArea(child, level + 1))}
       </div>
     );
   };
